@@ -1,0 +1,1 @@
+const main = require('./scripts/script.js');
