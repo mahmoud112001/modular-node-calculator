@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js — Lecture 1</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: #252a38;
+    --green: #4ade80;
+    --green-dim: #22543d;
+    --cyan: #22d3ee;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --purple: #a78bfa;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --accent: #4ade80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* === HEADER === */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,15,20,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .logo { font-size: 1rem; font-weight: 800; color: var(--green); letter-spacing: 0.05em; }
+  .logo span { color: var(--text-muted); font-weight: 400; }
+  .progress-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .progress-label { font-size: 0.72rem; color: var(--text-muted); font-family: 'Space Mono', monospace; }
+  .progress-track {
+    width: 140px; height: 4px;
+    background: var(--border); border-radius: 99px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--green);
+    border-radius: 99px; transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* === LAYOUT === */
+  .container { display: flex; min-height: calc(100vh - 60px); }
+
+  /* === SIDEBAR === */
+  .sidebar {
+    width: 270px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 0;
+    position: sticky; top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  .sidebar-title {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em;
+    color: var(--text-muted); text-transform: uppercase;
+    padding: 0 1.5rem 0.8rem;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0.55rem 1.5rem; cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+    font-size: 0.82rem; font-weight: 600; color: var(--text-dim);
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    background: rgba(74,222,128,0.07);
+    border-left-color: var(--green); color: var(--green);
+  }
+  .nav-item.done .nav-num { background: var(--green); color: #000; }
+  .nav-num {
+    min-width: 22px; height: 22px; border-radius: 50%;
+    background: var(--border); display: flex; align-items: center;
+    justify-content: center; font-size: 0.65rem; font-weight: 700;
+    font-family: 'Space Mono', monospace; flex-shrink: 0;
+  }
+  .nav-text { line-height: 1.3; }
+
+  /* === MAIN === */
+  main { flex: 1; padding: 2.5rem 3rem; max-width: 820px; }
+
+  /* === SECTION CARDS === */
+  .section-card {
+    display: none; animation: fadeUp 0.35s ease;
+  }
+  .section-card.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-tag {
+    font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--green); font-family: 'Space Mono', monospace;
+    font-weight: 700; margin-bottom: 0.5rem;
+  }
+  .section-title {
+    font-size: 2rem; font-weight: 800; line-height: 1.2;
+    margin-bottom: 1rem; color: var(--text);
+  }
+  .section-title em { color: var(--green); font-style: normal; }
+  .section-body {
+    font-size: 0.95rem; line-height: 1.75; color: var(--text-dim);
+    margin-bottom: 1.5rem;
+  }
+  .section-body strong { color: var(--text); font-weight: 600; }
+
+  /* === INFO BOX === */
+  .info-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.2rem 1.4rem;
+    margin-bottom: 1.2rem; position: relative; overflow: hidden;
+  }
+  .info-box::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; border-radius: 99px;
+  }
+  .info-box.green::before { background: var(--green); }
+  .info-box.cyan::before  { background: var(--cyan); }
+  .info-box.amber::before { background: var(--amber); }
+  .info-box.red::before   { background: var(--red); }
+  .info-box.purple::before{ background: var(--purple); }
+  .info-box-title {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; margin-bottom: 0.5rem; font-family: 'Space Mono', monospace;
+  }
+  .info-box.green .info-box-title { color: var(--green); }
+  .info-box.cyan  .info-box-title { color: var(--cyan); }
+  .info-box.amber .info-box-title { color: var(--amber); }
+  .info-box.red   .info-box-title { color: var(--red); }
+  .info-box.purple .info-box-title { color: var(--purple); }
+  .info-box p { font-size: 0.88rem; line-height: 1.65; color: var(--text-dim); }
+  .info-box p strong { color: var(--text); }
+
+  /* === CODE BLOCK === */
+  .code-block {
+    background: #090b10; border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; margin-bottom: 1.2rem;
+  }
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 1rem;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text-muted);
+  }
+  .code-dots { display: flex; gap: 6px; }
+  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dot:nth-child(1) { background: #f87171; }
+  .code-dot:nth-child(2) { background: var(--amber); }
+  .code-dot:nth-child(3) { background: var(--green); }
+  .code-block pre {
+    padding: 1.2rem 1.4rem; overflow-x: auto;
+    font-family: 'Space Mono', monospace; font-size: 0.82rem; line-height: 1.7;
+  }
+  .k { color: var(--purple); }   /* keyword */
+  .s { color: var(--amber); }    /* string */
+  .c { color: #475569; }         /* comment */
+  .f { color: var(--cyan); }     /* function */
+  .v { color: var(--green); }    /* variable */
+  .n { color: #fb923c; }         /* number */
+  .p { color: var(--text-dim); } /* punctuation */
+
+  /* === INTERACTIVE TABS === */
+  .tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab {
+    padding: 0.4rem 1rem; border-radius: 6px; border: 1px solid var(--border);
+    cursor: pointer; font-size: 0.8rem; font-weight: 600;
+    background: var(--surface); color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .tab:hover { border-color: var(--green); color: var(--green); }
+  .tab.active { background: rgba(74,222,128,0.12); border-color: var(--green); color: var(--green); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* === COMPARE TABLE === */
+  .compare-table {
+    width: 100%; border-collapse: collapse; margin-bottom: 1.2rem;
+    font-size: 0.85rem;
+  }
+  .compare-table th {
+    text-align: left; padding: 0.7rem 1rem;
+    background: var(--surface2); color: var(--text-dim);
+    font-family: 'Space Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    border: 1px solid var(--border);
+  }
+  .compare-table td {
+    padding: 0.7rem 1rem; border: 1px solid var(--border);
+    color: var(--text-dim); line-height: 1.5;
+    background: var(--surface);
+  }
+  .compare-table tr:hover td { background: var(--surface2); }
+  .compare-table .badge {
+    display: inline-block; padding: 0.15rem 0.55rem;
+    border-radius: 99px; font-size: 0.7rem; font-weight: 700;
+    font-family: 'Space Mono', monospace;
+  }
+  .badge.green { background: rgba(74,222,128,0.15); color: var(--green); }
+  .badge.red   { background: rgba(248,113,113,0.15); color: var(--red); }
+  .badge.amber { background: rgba(251,191,36,0.15); color: var(--amber); }
+
+  /* === INTERACTIVE REPL SIM === */
+  .repl-sim {
+    background: #090b10; border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; margin-bottom: 1.2rem;
+  }
+  .repl-header {
+    background: var(--surface2); padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .repl-header-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .repl-header-title { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
+  .repl-output {
+    padding: 1rem 1.2rem; min-height: 120px;
+    font-family: 'Space Mono', monospace; font-size: 0.82rem; line-height: 1.8;
+  }
+  .repl-line { display: flex; gap: 10px; margin-bottom: 2px; }
+  .repl-prompt { color: var(--green); flex-shrink: 0; }
+  .repl-input-text { color: var(--cyan); }
+  .repl-result { color: var(--text-dim); padding-left: 0; }
+  .repl-result.value { color: var(--amber); }
+  .repl-result.undefined { color: var(--text-muted); }
+  .repl-row {
+    display: flex; border-top: 1px solid var(--border);
+    align-items: center;
+  }
+  .repl-prompt-label {
+    padding: 0.65rem 1rem; color: var(--green);
+    font-family: 'Space Mono', monospace; font-size: 0.82rem; flex-shrink: 0;
+  }
+  .repl-inp {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--cyan); font-family: 'Space Mono', monospace;
+    font-size: 0.82rem; padding: 0.65rem 0;
+  }
+  .repl-run {
+    padding: 0.5rem 1rem; background: rgba(74,222,128,0.12);
+    border: none; border-left: 1px solid var(--border);
+    color: var(--green); cursor: pointer; font-family: 'Space Mono', monospace;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em;
+    transition: background 0.15s;
+  }
+  .repl-run:hover { background: rgba(74,222,128,0.22); }
+  .repl-hint { font-size: 0.72rem; color: var(--text-muted); padding: 0.5rem 1.2rem;
+    font-family: 'Space Mono', monospace; }
+  .repl-hint .try { color: var(--amber); cursor: pointer; text-decoration: underline; }
+
+  /* === SEM VER WIDGET === */
+  .semver-widget {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.5rem; margin-bottom: 1.2rem;
+  }
+  .semver-display {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.2rem; font-family: 'Space Mono', monospace;
+    font-size: 2.5rem; font-weight: 700; margin-bottom: 1.5rem;
+  }
+  .sem-part { text-align: center; }
+  .sem-num {
+    display: block; padding: 0.2rem 0.6rem;
+    border-radius: 8px; transition: all 0.25s;
+  }
+  .sem-major .sem-num { color: var(--red); background: rgba(248,113,113,0.12); }
+  .sem-minor .sem-num { color: var(--amber); background: rgba(251,191,36,0.12); }
+  .sem-patch .sem-num { color: var(--green); background: rgba(74,222,128,0.12); }
+  .sem-label {
+    display: block; font-size: 0.55rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted); margin-top: 4px;
+  }
+  .sem-dot { color: var(--border); align-self: flex-start; margin-top: 0.35rem; }
+  .semver-controls { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .sem-btn {
+    padding: 0.5rem 1.2rem; border-radius: 8px; border: 1px solid var(--border);
+    cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    font-weight: 700; transition: all 0.15s; background: var(--surface2);
+  }
+  .sem-btn.major { color: var(--red); border-color: rgba(248,113,113,0.3); }
+  .sem-btn.major:hover { background: rgba(248,113,113,0.1); border-color: var(--red); }
+  .sem-btn.minor { color: var(--amber); border-color: rgba(251,191,36,0.3); }
+  .sem-btn.minor:hover { background: rgba(251,191,36,0.1); border-color: var(--amber); }
+  .sem-btn.patch { color: var(--green); border-color: rgba(74,222,128,0.3); }
+  .sem-btn.patch:hover { background: rgba(74,222,128,0.1); border-color: var(--green); }
+  .sem-btn.reset { color: var(--text-muted); }
+  .sem-btn.reset:hover { color: var(--text); border-color: var(--text-muted); }
+  .sem-explanation {
+    margin-top: 1rem; padding: 0.8rem 1rem;
+    background: var(--surface2); border-radius: 8px;
+    font-size: 0.83rem; color: var(--text-dim); min-height: 48px;
+    transition: all 0.2s; font-family: 'Space Mono', monospace;
+  }
+
+  /* === MODULE FLOW DIAGRAM === */
+  .flow-diagram {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.5rem; margin-bottom: 1.2rem;
+    font-family: 'Space Mono', monospace; font-size: 0.78rem;
+  }
+  .flow-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .flow-box {
+    padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid;
+    white-space: nowrap;
+  }
+  .flow-box.file { border-color: rgba(34,211,238,0.4); color: var(--cyan); background: rgba(34,211,238,0.07); }
+  .flow-box.wrapper { border-color: rgba(167,139,250,0.4); color: var(--purple); background: rgba(167,139,250,0.07); }
+  .flow-box.param { border-color: rgba(251,191,36,0.4); color: var(--amber); background: rgba(251,191,36,0.07); }
+  .flow-arrow { color: var(--text-muted); font-size: 1rem; }
+
+  /* === NPM FILE CARDS === */
+  .file-cards { display: flex; gap: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+  .file-card {
+    flex: 1; min-width: 200px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.2rem; cursor: pointer;
+    transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .file-card:hover { border-color: var(--green); transform: translateY(-2px); }
+  .file-card.active-card { border-color: var(--green); background: rgba(74,222,128,0.05); }
+  .file-card-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .file-card-name {
+    font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    font-weight: 700; color: var(--text); margin-bottom: 0.3rem;
+  }
+  .file-card-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+  .file-detail {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.2rem; margin-bottom: 1.2rem;
+    display: none;
+  }
+  .file-detail.active { display: block; animation: fadeUp 0.2s ease; }
+  .file-detail ul { list-style: none; padding: 0; }
+  .file-detail ul li {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 0.4rem 0; border-bottom: 1px solid var(--border);
+    font-size: 0.85rem; color: var(--text-dim);
+  }
+  .file-detail ul li:last-child { border-bottom: none; }
+  .file-detail ul li .icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .file-detail ul li strong { color: var(--text); }
+
+  /* === QUIZ === */
+  .quiz-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.5rem; margin-bottom: 1.2rem;
+  }
+  .quiz-q { font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-option {
+    padding: 0.65rem 1rem; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px;
+    cursor: pointer; font-size: 0.85rem; color: var(--text-dim);
+    transition: all 0.15s; text-align: left;
+  }
+  .quiz-option:hover:not(.chosen) { border-color: var(--cyan); color: var(--cyan); }
+  .quiz-option.correct { border-color: var(--green); color: var(--green); background: rgba(74,222,128,0.1); }
+  .quiz-option.wrong { border-color: var(--red); color: var(--red); background: rgba(248,113,113,0.1); }
+  .quiz-feedback {
+    margin-top: 0.8rem; padding: 0.7rem 1rem;
+    border-radius: 8px; font-size: 0.85rem; display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.ok { background: rgba(74,222,128,0.1); color: var(--green); }
+  .quiz-feedback.fail { background: rgba(248,113,113,0.1); color: var(--red); }
+
+  /* === NAV FOOTER === */
+  .nav-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 2rem; padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .nav-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0.65rem 1.4rem; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-dim); cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    transition: all 0.15s; font-family: 'Syne', sans-serif;
+  }
+  .nav-btn:hover { border-color: var(--green); color: var(--green); }
+  .nav-btn.primary {
+    background: rgba(74,222,128,0.12); border-color: var(--green); color: var(--green);
+  }
+  .nav-btn.primary:hover { background: rgba(74,222,128,0.22); }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .nav-btn:disabled:hover { border-color: var(--border); color: var(--text-dim); }
+  .done-badge {
+    padding: 0.3rem 0.8rem; background: rgba(74,222,128,0.1);
+    border: 1px solid rgba(74,222,128,0.3); border-radius: 99px;
+    font-size: 0.72rem; color: var(--green); font-family: 'Space Mono', monospace;
+    font-weight: 700;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* highlight pulse */
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* === DIAGRAM SVG === */
+  .engine-diagram svg { width: 100%; }
+
+  /* mobile */
+  @media(max-width: 768px) {
+    .sidebar { display: none; }
+    main { padding: 1.5rem 1.2rem; }
+    .section-title { font-size: 1.5rem; }
+    .file-cards { flex-direction: column; }
+    .semver-display { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NODE<span>.JS</span> — Lecture 1</div>
+  <div class="progress-bar-wrap">
+    <span class="progress-label" id="progressLabel">0 / 12</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Topics</div>
+    <div id="navList"></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="mainArea"></main>
+</div>
+
+<script>
+// =============================================
+// DATA
+// =============================================
+const sections = [
+  // 1
+  {
+    id: 1,
+    tag: "Topic 01",
+    title: "What is a <em>JS Engine</em>?",
+    body: `A <strong>JavaScript Engine</strong> is a program that reads your JavaScript code (which is just text) and executes it on the CPU. Since CPUs only understand machine code (binary), the engine translates JS → machine code for you.<br><br>
+The most famous engine is <strong>V8</strong>, built by Google using C++. It powers both Chrome and Node.js.`,
+    nav: "JS Engine",
+    interactive: "engine"
+  },
+  // 2
+  {
+    id: 2,
+    tag: "Topic 02",
+    title: "What is a <em>JS Runtime Environment</em>?",
+    body: `The JS Engine alone is NOT enough to do useful things. A <strong>Runtime Environment</strong> wraps the engine and adds extra tools: APIs, event loops, and built-in modules.<br><br>
+Think of it like this: the engine is the <strong>car engine</strong>, the runtime is the <strong>whole car</strong>.`,
+    nav: "JS Runtime Env",
+    interactive: "runtime"
+  },
+  // 3+4
+  {
+    id: 3,
+    tag: "Topic 03 & 04",
+    title: "<em>Browser</em> vs <em>Machine</em> Runtime",
+    body: `The same V8 engine runs in two very different environments. Each environment gives different built-in APIs that JS can use.`,
+    nav: "Browser vs Node Runtime",
+    interactive: "browserVsNode"
+  },
+  // 5
+  {
+    id: 4,
+    tag: "Topic 05",
+    title: "<em>3 Ways</em> to Run JS in Node",
+    body: `Node.js gives you three ways to execute JavaScript code:`,
+    nav: "3 Ways to Run JS",
+    interactive: "threeWays"
+  },
+  // 6+7
+  {
+    id: 5,
+    tag: "Topic 06 & 07",
+    title: "REPL: <em>Value vs Expression vs Statement</em>",
+    body: `The REPL (Read–Eval–Print Loop) prints different things depending on what you type. And the special <code style="color:var(--green);font-family:'Space Mono',monospace">_</code> variable holds the <strong>last evaluated value</strong>.`,
+    nav: "REPL Concepts",
+    interactive: "repl"
+  },
+  // 8
+  {
+    id: 6,
+    tag: "Topic 08",
+    title: "Browser Console: <em>$ and $$</em> Shortcuts",
+    body: `Inside the browser's DevTools console, you get two powerful shortcuts that save typing <code style="color:var(--cyan);font-family:'Space Mono',monospace">document.querySelector</code> every time.`,
+    nav: "$ and $$ Shortcuts",
+    interactive: "dollarShortcuts"
+  },
+  // 9+10
+  {
+    id: 7,
+    tag: "Topic 09 & 10",
+    title: "<em>Module Systems</em>: How Files Talk",
+    body: `A module system defines how one JS file can share code with another file. Without it, every file is an island. Node.js supports two major systems:`,
+    nav: "Module Systems",
+    interactive: "moduleSystems"
+  },
+  // 11+12
+  {
+    id: 8,
+    tag: "Topic 11 & 12",
+    title: "<em>CommonJS</em> Internals & IIFE",
+    body: `When Node reads a CommonJS file, it <strong>wraps your code</strong> inside an Immediately Invoked Function Expression (IIFE) before executing it. This is why you can use <code style="color:var(--amber);font-family:'Space Mono',monospace">module</code>, <code style="color:var(--amber);font-family:'Space Mono',monospace">exports</code>, <code style="color:var(--amber);font-family:'Space Mono',monospace">require</code>, etc — they're passed as arguments!`,
+    nav: "CommonJS & IIFE",
+    interactive: "commonjs"
+  },
+  // 13+14
+  {
+    id: 9,
+    tag: "Topic 13 & 14",
+    title: "Why CommonJS is <em>Bad in Browsers</em> & the Fix",
+    body: `CommonJS uses <strong>synchronous</strong> <code style="color:var(--red);font-family:'Space Mono',monospace">require()</code>. In a browser, loading a module means an HTTP request — blocking the entire page while waiting is terrible UX.`,
+    nav: "CJS Problem & Fix",
+    interactive: "cjsProblem"
+  },
+  // 15
+  {
+    id: 10,
+    tag: "Topic 15",
+    title: "What is <em>NPM</em>?",
+    body: `<strong>NPM</strong> (Node Package Manager) is a tool that lets you publish, install, and manage code packages in your project. It ships with Node.js automatically.`,
+    nav: "What is NPM?",
+    interactive: "npm"
+  },
+  // 16+17
+  {
+    id: 11,
+    tag: "Topic 16 & 17",
+    title: "<em>package.json</em> vs <em>package-lock.json</em> vs <em>node_modules</em>",
+    body: `Three important files/folders are created when you start using NPM. Click each to learn what it does:`,
+    nav: "NPM Files",
+    interactive: "npmFiles"
+  },
+  // 18-21
+  {
+    id: 12,
+    tag: "Topic 18–21",
+    title: "<em>Semantic Versioning</em>",
+    body: `Every NPM package has a version number with 3 parts separated by dots: <code style="color:var(--text);font-family:'Space Mono',monospace">MAJOR.MINOR.PATCH</code>. Click the buttons below to see what each change means:`,
+    nav: "Semantic Versioning",
+    interactive: "semver"
+  },
+];
+
+// =============================================
+// BUILD NAV
+// =============================================
+const navList = document.getElementById('navList');
+const mainArea = document.getElementById('mainArea');
+const done = new Set();
+
+function buildNav() {
+  navList.innerHTML = '';
+  sections.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'nav-item' + (i === 0 ? ' active' : '') + (done.has(i) ? ' done' : '');
+    el.dataset.idx = i;
+    el.innerHTML = `<span class="nav-num">${s.id}</span><span class="nav-text">${s.nav}</span>`;
+    el.addEventListener('click', () => showSection(i));
+    navList.appendChild(el);
+  });
+}
+
+// =============================================
+// INTERACTIVE COMPONENTS
+// =============================================
+function engineHTML() {
+  return `
+  <div class="info-box green">
+    <div class="info-box-title">⚡ V8 Engine</div>
+    <p>Built by Google in <strong>C++</strong>. It compiles JS directly to machine code using <strong>Just-In-Time (JIT)</strong> compilation — so it's fast!</p>
+  </div>
+  <div class="flow-diagram">
+    <div class="flow-row">
+      <div class="flow-box file">Your JS code<br><small style="color:var(--text-muted)">console.log("hi")</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box wrapper">V8 Engine<br><small style="color:var(--text-muted)">Parses & Compiles</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box param">Machine Code<br><small style="color:var(--text-muted)">01001101...</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box file">CPU Runs It ✅</div>
+    </div>
+  </div>
+  <div class="info-box amber">
+    <div class="info-box-title">🔑 Key Fact</div>
+    <p>V8 is used by <strong>Chrome</strong> (browser) AND <strong>Node.js</strong> (server). Same engine, different runtime environments.</p>
+  </div>
+  `;
+}
+
+function runtimeHTML() {
+  return `
+  <div class="info-box cyan">
+    <div class="info-box-title">🏗️ Runtime = Engine + Extra APIs</div>
+    <p>The engine executes JS logic. The runtime adds the <strong>environment-specific tools</strong> your code needs to interact with the world.</p>
+  </div>
+  <div class="flow-diagram">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.78rem;">
+      <div style="border:1px solid rgba(34,211,238,0.3);border-radius:8px;padding:1rem;">
+        <div style="color:var(--cyan);font-weight:700;margin-bottom:0.5rem;">🌐 Browser Runtime</div>
+        <div style="color:var(--text-muted);line-height:1.8;">
+          V8 Engine +<br>
+          DOM API<br>
+          fetch()<br>
+          localStorage<br>
+          window object<br>
+          setTimeout()
+        </div>
+      </div>
+      <div style="border:1px solid rgba(74,222,128,0.3);border-radius:8px;padding:1rem;">
+        <div style="color:var(--green);font-weight:700;margin-bottom:0.5rem;">🖥️ Node.js Runtime</div>
+        <div style="color:var(--text-muted);line-height:1.8;">
+          V8 Engine +<br>
+          fs (file system)<br>
+          http module<br>
+          process object<br>
+          path module<br>
+          os module
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+function browserVsNodeHTML() {
+  return `
+  <table class="compare-table">
+    <tr>
+      <th>Feature</th>
+      <th>🌐 Browser</th>
+      <th>🖥️ Node.js</th>
+    </tr>
+    <tr>
+      <td>JS Engine</td>
+      <td><span class="badge green">V8 (Chrome)</span></td>
+      <td><span class="badge green">V8</span></td>
+    </tr>
+    <tr>
+      <td>Built with</td>
+      <td>C++</td>
+      <td>C++</td>
+    </tr>
+    <tr>
+      <td>DOM Access</td>
+      <td><span class="badge green">✅ Yes</span></td>
+      <td><span class="badge red">❌ No</span></td>
+    </tr>
+    <tr>
+      <td>File System</td>
+      <td><span class="badge red">❌ No</span></td>
+      <td><span class="badge green">✅ Yes (fs)</span></td>
+    </tr>
+    <tr>
+      <td>window object</td>
+      <td><span class="badge green">✅ Yes</span></td>
+      <td><span class="badge red">❌ No</span></td>
+    </tr>
+    <tr>
+      <td>process object</td>
+      <td><span class="badge red">❌ No</span></td>
+      <td><span class="badge green">✅ Yes</span></td>
+    </tr>
+    <tr>
+      <td>Use case</td>
+      <td>Web UI</td>
+      <td>Server / CLI / Tools</td>
+    </tr>
+  </table>
+  <div class="info-box green">
+    <div class="info-box-title">💡 Remember</div>
+    <p>Chrome uses <strong>V8</strong>. Node.js also uses <strong>V8</strong>. They share the same engine but live in completely different environments with different APIs available.</p>
+  </div>
+  `;
+}
+
+function threeWaysHTML() {
+  return `
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(this,'tw1')">📄 JS File</div>
+    <div class="tab" onclick="switchTab(this,'tw2')">💻 --eval flag</div>
+    <div class="tab" onclick="switchTab(this,'tw3')">🔄 REPL</div>
+  </div>
+  <div id="tw1" class="tab-content active">
+    <div class="info-box green">
+      <div class="info-box-title">Method 1 — JS File</div>
+      <p>Write code in a <strong>.js file</strong> and run it with <code style="color:var(--cyan);font-family:'Space Mono',monospace">node filename.js</code>. This is the most common way in production.</p>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>hello.js → terminal</span></div>
+      <pre><span class="c">// hello.js</span>
+<span class="f">console</span>.<span class="f">log</span>(<span class="s">"Hello from a file!"</span>)<span class="p">;</span>
+
+<span class="c">// Run in terminal:</span>
+<span class="v">node</span> hello.js
+<span class="c">// Output: Hello from a file!</span></pre>
+    </div>
+  </div>
+  <div id="tw2" class="tab-content">
+    <div class="info-box cyan">
+      <div class="info-box-title">Method 2 — eval flag</div>
+      <p>Pass a JS string directly on the command line using the <strong>-e</strong> or <strong>--eval</strong> flag. Good for quick one-liners.</p>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>terminal</span></div>
+      <pre><span class="v">node</span> -e <span class="s">"console.log(2 + 2)"</span>
+<span class="c">// Output: 4</span>
+
+<span class="v">node</span> --eval <span class="s">"console.log('Hello!')"</span>
+<span class="c">// Output: Hello!</span></pre>
+    </div>
+  </div>
+  <div id="tw3" class="tab-content">
+    <div class="info-box amber">
+      <div class="info-box-title">Method 3 — REPL</div>
+      <p>Type <code style="color:var(--green);font-family:'Space Mono',monospace">node</code> in terminal (no file). You enter an interactive loop: <strong>R</strong>ead → <strong>E</strong>val → <strong>P</strong>rint → <strong>L</strong>oop.</p>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>terminal — REPL session</span></div>
+      <pre><span class="v">$ node</span>
+<span class="c">Welcome to Node.js v20.0.0</span>
+<span class="p">></span> <span class="n">2</span> + <span class="n">2</span>
+<span class="s">4</span>
+<span class="p">></span> <span class="s">'Hello'</span>
+<span class="s">'Hello'</span>
+<span class="p">></span>  <span class="c">// Press Ctrl+D to exit</span></pre>
+    </div>
+  </div>
+  `;
+}
+
+function replHTML() {
+  return `
+  <table class="compare-table" style="margin-bottom:1.2rem">
+    <tr>
+      <th>Concept</th>
+      <th>Definition</th>
+      <th>REPL prints?</th>
+      <th>Example</th>
+    </tr>
+    <tr>
+      <td style="color:var(--green);font-weight:700">Value</td>
+      <td>A raw piece of data</td>
+      <td><span class="badge green">✅ Yes</span></td>
+      <td><code style="font-family:'Space Mono',monospace">42</code> → prints <code style="font-family:'Space Mono',monospace;color:var(--amber)">42</code></td>
+    </tr>
+    <tr>
+      <td style="color:var(--cyan);font-weight:700">Expression</td>
+      <td>Code that produces a value</td>
+      <td><span class="badge green">✅ Yes</span></td>
+      <td><code style="font-family:'Space Mono',monospace">2 + 2</code> → prints <code style="font-family:'Space Mono',monospace;color:var(--amber)">4</code></td>
+    </tr>
+    <tr>
+      <td style="color:var(--amber);font-weight:700">Statement</td>
+      <td>Action / instruction</td>
+      <td><span class="badge amber">undefined</span></td>
+      <td><code style="font-family:'Space Mono',monospace">let x = 5</code> → prints <code style="font-family:'Space Mono',monospace;color:var(--text-muted)">undefined</code></td>
+    </tr>
+  </table>
+  <div class="info-box purple">
+    <div class="info-box-title">⚡ _ Shortcut</div>
+    <p>In REPL, <strong style="color:var(--purple);font-family:'Space Mono',monospace">_</strong> (underscore) always holds the <strong>last evaluated value</strong>. Try: type <code style="color:var(--green);font-family:'Space Mono',monospace">5 * 5</code> then type <code style="color:var(--green);font-family:'Space Mono',monospace">_</code> — it gives you <code style="color:var(--amber);font-family:'Space Mono',monospace">25</code>.</p>
+  </div>
+  <div class="repl-sim">
+    <div class="repl-header"><div class="repl-header-dot"></div><div class="repl-header-title">Node.js REPL Simulator</div></div>
+    <div class="repl-output" id="replOutput">
+      <div class="repl-line"><span class="repl-prompt">></span><span class="repl-input-text" style="color:var(--text-muted)">// Type JS below and press Enter or click Run</span></div>
+    </div>
+    <div class="repl-row">
+      <span class="repl-prompt-label">></span>
+      <input class="repl-inp" id="replInput" placeholder="Try: 2+2  or  let x=5  or  _" onkeydown="if(event.key==='Enter')runRepl()">
+      <button class="repl-run" onclick="runRepl()">RUN ↵</button>
+    </div>
+    <div class="repl-hint">Try: <span class="try" onclick="setRepl('2 + 2')">2 + 2</span> · <span class="try" onclick="setRepl('let x = 10')">let x = 10</span> · <span class="try" onclick="setRepl('x * 3')">x * 3</span> · <span class="try" onclick="setRepl('_')">_</span> · <span class="try" onclick="setRepl('\"hello\"')">"hello"</span></div>
+  </div>
+  `;
+}
+
+function dollarHTML() {
+  return `
+  <table class="compare-table">
+    <tr><th>Shortcut</th><th>Equivalent to</th><th>Returns</th></tr>
+    <tr>
+      <td><code style="font-family:'Space Mono',monospace;color:var(--green);font-size:1.1rem">$("selector")</code></td>
+      <td><code style="font-family:'Space Mono',monospace;font-size:0.78rem">document.querySelector("selector")</code></td>
+      <td>First matching element</td>
+    </tr>
+    <tr>
+      <td><code style="font-family:'Space Mono',monospace;color:var(--amber);font-size:1.1rem">$$("selector")</code></td>
+      <td><code style="font-family:'Space Mono',monospace;font-size:0.78rem">document.querySelectorAll("selector")</code></td>
+      <td>Array of ALL matching elements</td>
+    </tr>
+  </table>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>Browser DevTools Console</span></div>
+    <pre><span class="c">// $ → first match</span>
+<span class="f">$</span>(<span class="s">"h1"</span>)          <span class="c">// → &lt;h1&gt;Page Title&lt;/h1&gt;</span>
+<span class="f">$</span>(<span class="s">".btn"</span>)        <span class="c">// → first button with class "btn"</span>
+
+<span class="c">// $$ → all matches (as array)</span>
+<span class="f">$$</span>(<span class="s">"p"</span>)          <span class="c">// → [&lt;p&gt;, &lt;p&gt;, &lt;p&gt;, ...]</span>
+<span class="f">$$</span>(<span class="s">".card"</span>).<span class="f">length</span> <span class="c">// → number of cards</span></pre>
+  </div>
+  <div class="info-box amber">
+    <div class="info-box-title">⚠️ Browser Only</div>
+    <p>These shortcuts work <strong>only in the browser console</strong> (DevTools). They do NOT work in Node.js because there's no DOM!</p>
+  </div>
+  `;
+}
+
+function moduleSystemsHTML() {
+  return `
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(this,'ms1')">CommonJS (CJS)</div>
+    <div class="tab" onclick="switchTab(this,'ms2')">ES Modules (ESM)</div>
+    <div class="tab" onclick="switchTab(this,'ms3')">Comparison</div>
+  </div>
+  <div id="ms1" class="tab-content active">
+    <div class="info-box amber">
+      <div class="info-box-title">CommonJS — The Old Way (Node default)</div>
+      <p>Uses <code style="color:var(--amber);font-family:'Space Mono',monospace">require()</code> to import and <code style="color:var(--amber);font-family:'Space Mono',monospace">module.exports</code> to export. It's synchronous.</p>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>math.js + app.js (CommonJS)</span></div>
+      <pre><span class="c">// math.js — exporting</span>
+<span class="k">function</span> <span class="f">add</span>(a, b) { <span class="k">return</span> a + b; }
+<span class="v">module</span>.exports = { add };
+
+<span class="c">// app.js — importing</span>
+<span class="k">const</span> { <span class="v">add</span> } = <span class="f">require</span>(<span class="s">"./math"</span>);
+<span class="f">console</span>.<span class="f">log</span>(<span class="f">add</span>(<span class="n">2</span>, <span class="n">3</span>)); <span class="c">// 5</span></pre>
+    </div>
+  </div>
+  <div id="ms2" class="tab-content">
+    <div class="info-box green">
+      <div class="info-box-title">ES Modules — The Modern Way</div>
+      <p>Uses <code style="color:var(--green);font-family:'Space Mono',monospace">import</code> / <code style="color:var(--green);font-family:'Space Mono',monospace">export</code> syntax. It's the browser standard and supports async loading.</p>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>math.mjs + app.mjs (ES Module)</span></div>
+      <pre><span class="c">// math.mjs — exporting</span>
+<span class="k">export function</span> <span class="f">add</span>(a, b) { <span class="k">return</span> a + b; }
+
+<span class="c">// app.mjs — importing</span>
+<span class="k">import</span> { <span class="v">add</span> } <span class="k">from</span> <span class="s">"./math.mjs"</span>;
+<span class="f">console</span>.<span class="f">log</span>(<span class="f">add</span>(<span class="n">2</span>, <span class="n">3</span>)); <span class="c">// 5</span></pre>
+    </div>
+  </div>
+  <div id="ms3" class="tab-content">
+    <table class="compare-table">
+      <tr><th>Feature</th><th>CommonJS</th><th>ES Modules</th></tr>
+      <tr><td>Syntax</td><td><code style="font-family:'Space Mono',monospace">require()</code></td><td><code style="font-family:'Space Mono',monospace">import</code></td></tr>
+      <tr><td>Loading</td><td>Synchronous</td><td>Asynchronous</td></tr>
+      <tr><td>Browser native?</td><td><span class="badge red">❌ No</span></td><td><span class="badge green">✅ Yes</span></td></tr>
+      <tr><td>Top-level await?</td><td><span class="badge red">❌ No</span></td><td><span class="badge green">✅ Yes</span></td></tr>
+      <tr><td>File extension</td><td>.js / .cjs</td><td>.mjs or type:module</td></tr>
+      <tr><td>Default in Node?</td><td><span class="badge green">✅ Yes</span></td><td>Needs config</td></tr>
+    </table>
+  </div>
+  `;
+}
+
+function commonjsHTML() {
+  return `
+  <div class="info-box purple">
+    <div class="info-box-title">🎁 The IIFE Wrapper</div>
+    <p>Node.js secretly wraps every CommonJS file in this function before running it. This is why <code style="color:var(--amber);font-family:'Space Mono',monospace">require</code>, <code style="color:var(--amber);font-family:'Space Mono',monospace">exports</code>, <code style="color:var(--amber);font-family:'Space Mono',monospace">module</code>, <code style="color:var(--amber);font-family:'Space Mono',monospace">__filename</code>, and <code style="color:var(--amber);font-family:'Space Mono',monospace">__dirname</code> are available in every file.</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>What Node secretly does to your file</span></div>
+    <pre><span class="c">// ✍️ What you write:</span>
+<span class="k">const</span> <span class="v">x</span> = <span class="n">5</span>;
+<span class="v">module</span>.exports = x;
+
+<span class="c">// 🔮 What Node actually runs:</span>
+(<span class="k">function</span>(<span class="v">exports</span>, <span class="v">require</span>, <span class="v">module</span>, <span class="v">__filename</span>, <span class="v">__dirname</span>) {
+  <span class="k">const</span> <span class="v">x</span> = <span class="n">5</span>;
+  <span class="v">module</span>.exports = x;
+})(...);</pre>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem;">
+    <div class="info-box green">
+      <div class="info-box-title">✅ Reason 1 — No Leaks</div>
+      <p>Variables inside the IIFE stay <strong>private</strong>. They won't pollute the global scope or clash with other files.</p>
+    </div>
+    <div class="info-box cyan">
+      <div class="info-box-title">✅ Reason 2 — Params Injected</div>
+      <p>Node passes 5 useful values as parameters: <strong>exports, require, module, __filename, __dirname</strong>.</p>
+    </div>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>Using the injected params</span></div>
+    <pre><span class="f">console</span>.<span class="f">log</span>(<span class="v">__filename</span>);  <span class="c">// /home/user/app.js</span>
+<span class="f">console</span>.<span class="f">log</span>(<span class="v">__dirname</span>);   <span class="c">// /home/user</span>
+<span class="f">console</span>.<span class="f">log</span>(<span class="v">module</span>);      <span class="c">// Module { id, exports, ... }</span></pre>
+  </div>
+  `;
+}
+
+function cjsProblemHTML() {
+  return `
+  <div class="info-box red">
+    <div class="info-box-title">❌ The Problem with CommonJS in Browsers</div>
+    <p>When a browser hits <code style="color:var(--red);font-family:'Space Mono',monospace">require('./module')</code>, it must make an <strong>HTTP request</strong> to get that file from the server. Because <code style="font-family:'Space Mono',monospace">require()</code> is synchronous, the <strong>entire page freezes</strong> while waiting. With many modules, this is catastrophic for performance.</p>
+  </div>
+  <div class="flow-diagram">
+    <div class="flow-row" style="color:var(--red)">
+      <div class="flow-box" style="border-color:rgba(248,113,113,0.4);color:var(--red);background:rgba(248,113,113,0.07)">require('big-lib')</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:rgba(248,113,113,0.4);color:var(--red);background:rgba(248,113,113,0.07)">HTTP Request<br><small>waiting...</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:rgba(248,113,113,0.4);color:var(--red);background:rgba(248,113,113,0.07)">Page FROZEN 🥶</div>
+    </div>
+  </div>
+  <div class="info-box green">
+    <div class="info-box-title">✅ The Fix — Top-Level Await (ES Modules)</div>
+    <p>ES Modules support <strong>top-level <code style="font-family:'Space Mono',monospace">await</code></strong>. The browser can load modules <strong>asynchronously</strong> — other code keeps running while the module loads, no freezing.</p>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>Top-Level Await — ES Module</span></div>
+    <pre><span class="c">// In an ES Module (.mjs), you can await at the top level:</span>
+<span class="k">const</span> <span class="v">data</span> = <span class="k">await</span> <span class="f">fetch</span>(<span class="s">'https://api.example.com/data'</span>);
+<span class="k">const</span> <span class="v">json</span> = <span class="k">await</span> data.<span class="f">json</span>();
+
+<span class="c">// ✅ No function wrapper needed!</span>
+<span class="c">// ✅ Browser loads modules asynchronously</span></pre>
+  </div>
+  `;
+}
+
+function npmHTML() {
+  return `
+  <div class="info-box green">
+    <div class="info-box-title">📦 NPM = Node Package Manager</div>
+    <p>NPM lets you install and share packages (reusable code libraries). It comes bundled with Node.js — no separate install needed.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.2rem;">
+    <div class="info-box cyan">
+      <div class="info-box-title">📤 Publish</div>
+      <p>Share your own packages with the world on <strong>npmjs.com</strong></p>
+    </div>
+    <div class="info-box amber">
+      <div class="info-box-title">📥 Install</div>
+      <p>Download others' packages into your project</p>
+    </div>
+    <div class="info-box purple">
+      <div class="info-box-title">🔧 Manage</div>
+      <p>Track versions, run scripts, handle dependencies</p>
+    </div>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>Common NPM commands</span></div>
+    <pre><span class="v">npm init</span>          <span class="c"># Create package.json (start a project)</span>
+<span class="v">npm install</span> express  <span class="c"># Install a package</span>
+<span class="v">npm install</span> -D jest  <span class="c"># Install as devDependency</span>
+<span class="v">npm run</span> start        <span class="c"># Run a script from package.json</span>
+<span class="v">npm uninstall</span> lodash <span class="c"># Remove a package</span></pre>
+  </div>
+  `;
+}
+
+function npmFilesHTML() {
+  return `
+  <div class="file-cards">
+    <div class="file-card active-card" id="fc-pkg" onclick="showFile('pkg')">
+      <div class="file-card-icon">📋</div>
+      <div class="file-card-name">package.json</div>
+      <div class="file-card-desc">Your project's ID card & settings</div>
+    </div>
+    <div class="file-card" id="fc-lock" onclick="showFile('lock')">
+      <div class="file-card-icon">🔒</div>
+      <div class="file-card-name">package-lock.json</div>
+      <div class="file-card-desc">Exact versions locked in</div>
+    </div>
+    <div class="file-card" id="fc-nm" onclick="showFile('nm')">
+      <div class="file-card-icon">📁</div>
+      <div class="file-card-name">node_modules/</div>
+      <div class="file-card-desc">Actual downloaded code</div>
+    </div>
+  </div>
+  <div class="file-detail active" id="fd-pkg">
+    <div class="code-block" style="margin-bottom:0.8rem">
+      <div class="code-header"><div class="code-dots"><div class="code-dot"></div><div class="code-dot"></div><div class="code-dot"></div></div><span>package.json</span></div>
+      <pre>{
+  <span class="s">"name"</span>: <span class="s">"my-app"</span>,
+  <span class="s">"version"</span>: <span class="s">"1.0.0"</span>,
+  <span class="s">"scripts"</span>: {
+    <span class="s">"start"</span>: <span class="s">"node app.js"</span>,
+    <span class="s">"dev"</span>: <span class="s">"nodemon app.js"</span>
+  },
+  <span class="s">"dependencies"</span>: {
+    <span class="s">"express"</span>: <span class="s">"^4.18.0"</span>
+  },
+  <span class="s">"devDependencies"</span>: {
+    <span class="s">"jest"</span>: <span class="s">"^29.0.0"</span>
+  }
+}</pre>
+    </div>
+    <ul>
+      <li><span class="icon">📜</span><div><strong>scripts</strong> — shortcuts for terminal commands (e.g. <code style="font-family:'Space Mono',monospace">npm start</code>)</div></li>
+      <li><span class="icon">📦</span><div><strong>dependencies</strong> — packages needed in production</div></li>
+      <li><span class="icon">🧪</span><div><strong>devDependencies</strong> — packages only needed during development (tests, linters)</div></li>
+    </ul>
+  </div>
+  <div class="file-detail" id="fd-lock">
+    <div class="info-box amber">
+      <div class="info-box-title">🔒 What it does</div>
+      <p>Records the <strong>exact version</strong> of every installed package (and their dependencies). When a teammate runs <code style="font-family:'Space Mono',monospace">npm install</code>, they get the exact same versions — no surprises!</p>
+    </div>
+    <ul>
+      <li><span class="icon">📌</span><div>Locks exact versions like <code style="font-family:'Space Mono',monospace">express@4.18.2</code> not just <code style="font-family:'Space Mono',monospace">^4.18.0</code></div></li>
+      <li><span class="icon">🤝</span><div>Ensures the whole team uses identical dependency trees</div></li>
+      <li><span class="icon">🤖</span><div><strong>Auto-generated</strong> by NPM — never edit it manually</div></li>
+    </ul>
+  </div>
+  <div class="file-detail" id="fd-nm">
+    <div class="info-box red">
+      <div class="info-box-title">⚠️ Never commit node_modules!</div>
+      <p>This folder contains all the actual downloaded package code. It can be <strong>hundreds of MB</strong>. Always add it to <code style="font-family:'Space Mono',monospace">.gitignore</code>. Anyone can recreate it by running <code style="font-family:'Space Mono',monospace">npm install</code>.</p>
+    </div>
+    <ul>
+      <li><span class="icon">💻</span><div>Contains the actual source code of all installed packages</div></li>
+      <li><span class="icon">🚫</span><div>Should be in <code style="font-family:'Space Mono',monospace">.gitignore</code> — never push to GitHub</div></li>
+      <li><span class="icon">♻️</span><div>Recreate anytime with <code style="font-family:'Space Mono',monospace">npm install</code></div></li>
+    </ul>
+  </div>
+  `;
+}
+
+function semverHTML() {
+  return `
+  <div class="semver-widget">
+    <div class="semver-display">
+      <div class="sem-part sem-major"><span class="sem-num" id="svMaj">1</span><span class="sem-label">Major</span></div>
+      <div class="sem-dot">.</div>
+      <div class="sem-part sem-minor"><span class="sem-num" id="svMin">0</span><span class="sem-label">Minor</span></div>
+      <div class="sem-dot">.</div>
+      <div class="sem-part sem-patch"><span class="sem-num" id="svPat">0</span><span class="sem-label">Patch</span></div>
+    </div>
+    <div class="semver-controls">
+      <button class="sem-btn major" onclick="bumpSemver('major')">+Major (Breaking)</button>
+      <button class="sem-btn minor" onclick="bumpSemver('minor')">+Minor (Feature)</button>
+      <button class="sem-btn patch" onclick="bumpSemver('patch')">+Patch (Bug Fix)</button>
+      <button class="sem-btn reset" onclick="resetSemver()">Reset</button>
+    </div>
+    <div class="sem-explanation" id="semExplanation">👆 Click a button to see what changes and why</div>
+  </div>
+  <table class="compare-table">
+    <tr><th>Part</th><th>When to increment</th><th>Impact</th><th>Example</th></tr>
+    <tr>
+      <td style="color:var(--red);font-weight:700">MAJOR</td>
+      <td>Breaking API change</td>
+      <td><span class="badge red">💥 May break your code</span></td>
+      <td>1.0.0 → 2.0.0</td>
+    </tr>
+    <tr>
+      <td style="color:var(--amber);font-weight:700">MINOR</td>
+      <td>New feature added</td>
+      <td><span class="badge amber">🆕 Safe to update</span></td>
+      <td>1.0.0 → 1.1.0</td>
+    </tr>
+    <tr>
+      <td style="color:var(--green);font-weight:700">PATCH</td>
+      <td>Bug fix</td>
+      <td><span class="badge green">🔧 Always safe</span></td>
+      <td>1.0.0 → 1.0.1</td>
+    </tr>
+  </table>
+  <div class="info-box cyan">
+    <div class="info-box-title">^ and ~ in package.json</div>
+    <p><strong>^4.18.0</strong> = accept minor & patch updates (safe) | <strong>~4.18.0</strong> = accept only patch updates</p>
+  </div>
+  `;
+}
+
+// =============================================
+// SECTION RENDERER
+// =============================================
+let currentIdx = 0;
+let lastReplValue;
+
+const interactiveMap = {
+  engine: engineHTML,
+  runtime: runtimeHTML,
+  browserVsNode: browserVsNodeHTML,
+  threeWays: threeWaysHTML,
+  repl: replHTML,
+  dollarShortcuts: dollarHTML,
+  moduleSystems: moduleSystemsHTML,
+  commonjs: commonjsHTML,
+  cjsProblem: cjsProblemHTML,
+  npm: npmHTML,
+  npmFiles: npmFilesHTML,
+  semver: semverHTML,
+};
+
+function buildSections() {
+  mainArea.innerHTML = '';
+  sections.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'section-card' + (i === 0 ? ' active' : '');
+    div.id = `section-${i}`;
+
+    const interactive = interactiveMap[s.interactive] ? interactiveMap[s.interactive]() : '';
+
+    div.innerHTML = `
+      <div class="section-tag">${s.tag}</div>
+      <h1 class="section-title">${s.title}</h1>
+      <div class="section-body">${s.body}</div>
+      ${interactive}
+      <div class="nav-footer">
+        <button class="nav-btn" onclick="showSection(${i-1})" ${i===0?'disabled':''}>← Previous</button>
+        <span class="done-badge" id="db-${i}" style="display:none">✓ Completed</span>
+        <button class="nav-btn primary" onclick="markDone(${i})">${i===sections.length-1?'🎉 Finish':'Next →'}</button>
+      </div>
+    `;
+    mainArea.appendChild(div);
+  });
+}
+
+function showSection(idx) {
+  if (idx < 0 || idx >= sections.length) return;
+  document.querySelectorAll('.section-card').forEach(c => c.classList.remove('active'));
+  document.getElementById(`section-${idx}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item')[idx].classList.add('active');
+  currentIdx = idx;
+  mainArea.scrollTop = 0;
+  window.scrollTo(0,0);
+}
+
+function markDone(idx) {
+  done.add(idx);
+  document.getElementById(`db-${idx}`).style.display = 'inline-block';
+  document.querySelectorAll('.nav-item')[idx].classList.add('done');
+  updateProgress();
+  if (idx < sections.length - 1) showSection(idx + 1);
+}
+
+function updateProgress() {
+  const pct = Math.round((done.size / sections.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${done.size} / ${sections.length}`;
+}
+
+// =============================================
+// INTERACTIVE HELPERS
+// =============================================
+function switchTab(el, id) {
+  const parent = el.closest('.section-card') || document.body;
+  parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  parent.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
+}
+
+// REPL Simulator
+let replScope = {};
+function runRepl() {
+  const inp = document.getElementById('replInput');
+  const output = document.getElementById('replOutput');
+  const code = inp.value.trim();
+  if (!code) return;
+
+  const inputLine = document.createElement('div');
+  inputLine.className = 'repl-line';
+  inputLine.innerHTML = `<span class="repl-prompt">></span><span class="repl-input-text">${escapeHtml(code)}</span>`;
+  output.appendChild(inputLine);
+
+  const resultLine = document.createElement('div');
+  resultLine.className = 'repl-line';
+
+  try {
+    // Build a scope-aware eval using Function
+    const keys = Object.keys(replScope);
+    const vals = keys.map(k => replScope[k]);
+
+    let result;
+    const fn = new Function(...keys, `
+      "use strict";
+      try {
+        const __r = eval(${JSON.stringify(code)});
+        return { val: __r, type: typeof __r === 'undefined' ? 'undefined' : 'value' };
+      } catch(e) {
+        return { val: e.message, type: 'error' };
+      }
+    `);
+    result = fn(...vals);
+
+    // capture variable declarations
+    const varMatch = code.match(/^(?:let|const|var)\s+(\w+)\s*=\s*(.+)$/);
+    if (varMatch) {
+      try {
+        const newFn = new Function(...keys, `${code}; return ${varMatch[1]};`);
+        replScope[varMatch[1]] = newFn(...vals);
+      } catch(e) {}
+    }
+
+    if (result.type === 'undefined') {
+      resultLine.innerHTML = `<span class="repl-result undefined">undefined</span>`;
+      lastReplValue = undefined;
+    } else if (result.type === 'error') {
+      resultLine.innerHTML = `<span class="repl-result" style="color:var(--red)">${escapeHtml(result.val)}</span>`;
+    } else {
+      lastReplValue = result.val;
+      // handle _ shortcut
+      if (code.trim() === '_') {
+        resultLine.innerHTML = `<span class="repl-result value">${escapeHtml(String(lastReplValue))}</span>`;
+      } else {
+        replScope['__last'] = result.val;
+        resultLine.innerHTML = `<span class="repl-result value">${escapeHtml(JSON.stringify(result.val))}</span>`;
+      }
+    }
+  } catch(e) {
+    resultLine.innerHTML = `<span class="repl-result" style="color:var(--red)">${escapeHtml(e.message)}</span>`;
+  }
+
+  output.appendChild(resultLine);
+  output.scrollTop = output.scrollHeight;
+  inp.value = '';
+  inp.focus();
+}
+
+function setRepl(val) {
+  const inp = document.getElementById('replInput');
+  if (inp) { inp.value = val; inp.focus(); }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// NPM file cards
+function showFile(f) {
+  ['pkg','lock','nm'].forEach(id => {
+    document.getElementById(`fc-${id}`)?.classList.remove('active-card');
+    document.getElementById(`fd-${id}`)?.classList.remove('active');
+  });
+  document.getElementById(`fc-${f}`)?.classList.add('active-card');
+  document.getElementById(`fd-${f}`)?.classList.add('active');
+}
+
+// Semver widget
+let sv = { major: 1, minor: 0, patch: 0 };
+const semMessages = {
+  major: '💥 <strong style="color:var(--red)">MAJOR bump!</strong> Breaking changes — code that worked before may break. Teams must update their code!',
+  minor: '🆕 <strong style="color:var(--amber)">MINOR bump!</strong> A new feature was added but nothing broke. Safe to update!',
+  patch: '🔧 <strong style="color:var(--green)">PATCH bump!</strong> A bug was fixed. Totally safe — go update!',
+};
+function bumpSemver(part) {
+  if (part === 'major') { sv.major++; sv.minor = 0; sv.patch = 0; }
+  else if (part === 'minor') { sv.minor++; sv.patch = 0; }
+  else { sv.patch++; }
+  document.getElementById('svMaj').textContent = sv.major;
+  document.getElementById('svMin').textContent = sv.minor;
+  document.getElementById('svPat').textContent = sv.patch;
+  document.getElementById('semExplanation').innerHTML = semMessages[part];
+}
+function resetSemver() {
+  sv = { major:1, minor:0, patch:0 };
+  document.getElementById('svMaj').textContent = 1;
+  document.getElementById('svMin').textContent = 0;
+  document.getElementById('svPat').textContent = 0;
+  document.getElementById('semExplanation').innerHTML = '👆 Click a button to see what changes and why';
+}
+
+// =============================================
+// INIT
+// =============================================
+buildNav();
+buildSections();
+updateProgress();
+</script>
+</body>
+</html>
