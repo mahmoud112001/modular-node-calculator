@@ -43,6 +43,7 @@ A **JS Runtime Environment** wraps the engine and adds extra capabilities that J
 JS Code  →  JS Engine (V8)  →  Runtime APIs  →  Output
 ```
 
+
 The runtime provides:
 - The **event loop**
 - **Web APIs** (browser) or **Node APIs** (server)
