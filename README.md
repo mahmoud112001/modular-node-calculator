@@ -135,7 +135,6 @@ Node.js wraps every file in an **IIFE (Immediately Invoked Function Expression)*
 ```
 
 ### Why IIFE?
-
 **Reason 1 — Scope Protection:**
 Variables inside the function can't leak into the global scope or be accidentally overridden by other files.
 
