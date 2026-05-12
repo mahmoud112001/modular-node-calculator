@@ -185,6 +185,7 @@ import { add } from './math.js';
 const data = await fetch('/api/data'); // top-level await!
 ```
 
+
 ---
 
 ## 9. NPM — Node Package Manager
