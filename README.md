@@ -3,7 +3,6 @@
 > A structured study guide covering JavaScript engines, runtimes, the module system, NPM, and semantic versioning.
 
 ---
-
 ## Table of Contents
 
 1. [JavaScript Engine](#1-javascript-engine)
